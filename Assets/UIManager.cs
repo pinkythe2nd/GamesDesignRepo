@@ -7,17 +7,19 @@ using UnityEngine;
 using UnityEngine.UI;
 
 
-
 public class UIManager : MonoBehaviour
 {
-
     public static UIManager instance { get; set; }
 
     public Transform panel; // Reference to the panel whose children you want to iterate through
     public Dictionary<string, Sprite[]> UIButtonImages = new();
     public Dictionary<string, Sprite> SpriteDictionary = new();
-    public string[] fileNameArray;
 
+    public Texture2D background;
+
+    public GameObject[] buildings = new GameObject[4];
+    public GameObject[] churchUnits = new GameObject[1];
+    public GameObject[] blackSmithUnits = new GameObject[4];
 
     private void Awake()
     {
@@ -30,61 +32,66 @@ public class UIManager : MonoBehaviour
             instance = this;
         }
     }
-
     void Start()
     {
-        Texture2D texture;
-        for (int i = 0; i < fileNameArray.Length; i++)
-        {
-            texture = Resources.Load<Texture2D>("UIicons/" + fileNameArray[i]);
-            if (texture == null)
-            {
-                Debug.LogError("Texture " + fileNameArray[i] + " not found!");
-                continue;
-            }
-
-            Sprite sprite = Sprite.Create(texture,
-                new Rect(0, 0, texture.width, texture.height), Vector2.zero);
-
-            SpriteDictionary.Add(fileNameArray[i], sprite);
-
-        }
-
+        Sprite backgroundSprite = Sprite.Create(background, new Rect(0, 0, background.width, background.height), Vector2.one * 0.5f);
         Sprite[] tempSpriteArray = new Sprite[18];
         for (int i = 0; i < tempSpriteArray.Length; i++)
         {
-            tempSpriteArray[i] = SpriteDictionary["backgrounds/bg_black_frame"];
+            tempSpriteArray[i] = backgroundSprite;
         }
         UIButtonImages.Add("None", tempSpriteArray);
 
-        //init building buttons
-        Sprite[] buildingSpriteArray = new Sprite[18];
+        //init Settler UI buttons
+        Sprite[] settlerUIArray = new Sprite[18];
         for (int i = 0; i < tempSpriteArray.Length; i++)
         {
-            buildingSpriteArray[i] = SpriteDictionary["backgrounds/bg_black_frame"];
+            settlerUIArray[i] = backgroundSprite;
         }
-        buildingSpriteArray[0] = SpriteDictionary["items/arrow_basic"];
-        buildingSpriteArray[1] = SpriteDictionary["items/bone_skull"];
-        buildingSpriteArray[2] = SpriteDictionary["items/bone_white"];
-        buildingSpriteArray[3] = SpriteDictionary["items/book_closed_red"];
-        UIButtonImages.Add("Buildings", buildingSpriteArray);
 
-        //init training unit buttons
-        Sprite[] unitSpriteArray = new Sprite[18];
+        buildings[0] = GameObject.Find("Blacksmith_BlueTeam");
+        settlerUIArray[0] = buildings[0].GetComponent<Unit>().Icon;
+
+        buildings[1] = GameObject.Find("House_Level1_BlueTeam");
+        settlerUIArray[1] = buildings[1].GetComponent<Unit>().Icon;
+
+        buildings[2] = GameObject.Find("Church_BlueTeam");
+        settlerUIArray[2] = buildings[2].GetComponent<Unit>().Icon;
+
+        buildings[3] = GameObject.Find("House_Level1_BlueTeam");
+        settlerUIArray[3] = buildings[3].GetComponent<Unit>().Icon;
+
+        UIButtonImages.Add("Buildings", settlerUIArray);
+
+        //init church UI buttons
+        Sprite[] churchUIArray = new Sprite[18];
         for (int i = 0; i < tempSpriteArray.Length; i++)
         {
-            unitSpriteArray[i] = SpriteDictionary["backgrounds/bg_black_frame"];
+            churchUIArray[i] = backgroundSprite;
         }
-        unitSpriteArray[0] = SpriteDictionary["items/sword_basic4_blue"];
-        unitSpriteArray[1] = SpriteDictionary["items/fish_green"];
-        unitSpriteArray[2] = SpriteDictionary["items/sword_basic_blue"];
-        unitSpriteArray[3] = SpriteDictionary["items/bow_wood1"];
-        UIButtonImages.Add("BarracksTraining", unitSpriteArray);
+        churchUnits[0] = GameObject.Find("peasant_2");
+        churchUIArray[0] = churchUnits[0].GetComponent<Unit>().Icon;
 
+        UIButtonImages.Add("ChurchTraining", churchUIArray);
+        //init blacksmith UI buttons
+        Sprite[] blackSmithUIArray = new Sprite[18];
+        for (int i = 0; i < tempSpriteArray.Length; i++)
+        {
+            blackSmithUIArray[i] = backgroundSprite;
+        }
 
+        blackSmithUnits[0] = GameObject.Find("peasant_1");
+        blackSmithUIArray[0] = blackSmithUnits[0].GetComponent<Unit>().Icon;
+
+        blackSmithUnits[1] = GameObject.Find("king");
+        blackSmithUIArray[1] = blackSmithUnits[1].GetComponent<Unit>().Icon;
+
+        blackSmithUnits[2] = GameObject.Find("bow");
+        blackSmithUIArray[2] = blackSmithUnits[2].GetComponent<Unit>().Icon;
+
+        UIButtonImages.Add("blackSmithTraining", blackSmithUIArray);
 
         ChangeToNone();
-
     }
 
     public void ChangeToNone()
@@ -97,6 +104,12 @@ public class UIManager : MonoBehaviour
             Transform child = panel.GetChild(i);
             child.GetComponent<Image>().sprite = sprites[i];
             child.GetComponent<Button>().enabled = false;
+            child.GetComponent<UIButtons>().building = null;
+
+            if(child.childCount > 1)
+            {
+                Destroy(child.GetChild(1).gameObject);
+            }
         }
     }
 
@@ -104,6 +117,29 @@ public class UIManager : MonoBehaviour
     {
         Debug.Log("Building Button clicked!");
         SelectionManager.instance.placingBuildingFlag = true;
+    }
+
+    public void ChurchUI()
+    {
+        int childCount = panel.childCount;
+        Sprite[] sprites = UIButtonImages["ChurchTraining"];
+
+        for (int i = 0; i < childCount && i < sprites.Length; i++)
+        {
+            Transform child = panel.GetChild(i);
+            child.GetComponent<Image>().sprite = sprites[i];
+
+            if (i > 0)
+            {
+                child.GetComponent<Button>().enabled = false;
+
+            }
+            else
+            {
+                child.GetComponent<Button>().enabled = true;
+                child.GetComponent<UIButtons>().building = churchUnits[i];
+            }
+        }
     }
 
     public void ChangeToBuildings()
@@ -124,26 +160,22 @@ public class UIManager : MonoBehaviour
             else
             {
                 child.GetComponent<Button>().enabled = true;
-                child.GetComponent<UIButtons>().functionPointer = BuidlingMethods;
+                child.GetComponent<UIButtons>().building = buildings[i];
             }
         }
     }
 
-    public void TrainingMethods()
-    {
-        Debug.Log("Training....");
-    }
     public void ChangeToTrainingUnits()
     {
         int childCount = panel.childCount;
-        Sprite[] sprites = UIButtonImages["BarracksTraining"];
+        Sprite[] sprites = UIButtonImages["blackSmithTraining"];
 
         for (int i = 0; i < childCount && i < sprites.Length; i++)
         {
             Transform child = panel.GetChild(i);
             child.GetComponent<Image>().sprite = sprites[i];
 
-            if (i > 3)
+            if (i > 2)
             {
                 child.GetComponent<Button>().enabled = false;
 
@@ -151,7 +183,7 @@ public class UIManager : MonoBehaviour
             else
             {
                 child.GetComponent<Button>().enabled = true;
-                child.GetComponent<UIButtons>().functionPointer = TrainingMethods;
+                child.GetComponent<UIButtons>().building = blackSmithUnits[i];
             }
         }
     }
@@ -162,12 +194,6 @@ public class UIManager : MonoBehaviour
 
     }
 
-    public void IterateChildren()
-    {
-        int childCount = panel.childCount;
-    }
-
-    // Update is called once per frame
     void Update()
     {
     }

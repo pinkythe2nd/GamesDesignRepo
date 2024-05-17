@@ -1,14 +1,21 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
-
 
 
 public class BuildingManager : MonoBehaviour
 {
     public static BuildingManager instance { get; set; }
     public Dictionary<string, Sprite> BuildingToModel = new();
+    public GameObject whatBuilding;
+    
+    public float wood;
+    public float stone;
+
+    public TextMeshProUGUI text; 
 
     private void Awake()
     {
@@ -22,26 +29,37 @@ public class BuildingManager : MonoBehaviour
         }
     }
 
-    public void updateBuildings()
+    public Boolean spendResources(GameObject unitObj)
     {
-        foreach (var unit in SelectionManager.instance.allUnitsList)
+        Unit unit = unitObj.GetComponent<Unit>();
+        if (wood - unit.woodCost >= 0 && stone - unit.stoneCost >= 0)
         {
-            Building buildingType = unit.GetComponent<Building>();
-            if (buildingType != null)
-            {
-                switch (buildingType.buildingType)
-                {
-                    case Building.Type.House:
-                        Debug.Log("House");
-                        break;
-                    case Building.Type.Barracks:
-                        Debug.Log("Barracks");
-                        UIManager.instance.ChangeToTrainingUnits();
-                        break;
-                }
-            }
+            wood -= unit.woodCost;
+            stone -= unit.stoneCost;
+            return true;
         }
+        return false;
     }
+
+    public void updateUI(Building.Type buildingType)
+    {
+        switch (buildingType)
+        {
+            case (Building.Type.House):
+                UIManager.instance.ChangeToNone();
+                break;
+            case (Building.Type.Barracks):
+                UIManager.instance.ChangeToNone();
+                UIManager.instance.ChangeToTrainingUnits();
+                break;
+            case (Building.Type.Church):
+                UIManager.instance.ChangeToNone();
+                UIManager.instance.ChurchUI();
+                break;
+        }
+
+    }
+
 
     public void PlaceBuilding(string building)
     {
@@ -49,6 +67,6 @@ public class BuildingManager : MonoBehaviour
     }
     public void Update()
     {
-        return;
+        text.text = ((int)wood).ToString() + "\n" + ((int)stone).ToString();
     }
 }

@@ -17,7 +17,6 @@ public class cameraMovement : MonoBehaviour
 
     private Rigidbody rb;
     private BoxCollider boxCollider;
-
     // Start is called before the first frame update
     void Start()
     {
